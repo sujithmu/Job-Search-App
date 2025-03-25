@@ -56,7 +56,6 @@ interface JobHit {
 
 interface JobListTableProps {
     jobs: JobHit[];
-    t: any; // Receive t as prop
 }
 
 const modalStyle = {
@@ -74,7 +73,7 @@ const modalStyle = {
     textAlign: 'inherit'
 };
 
-const JobListTable: React.FC<JobListTableProps> = ({ jobs, t }) => {
+const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
 
     const [copiedEmail, setCopiedEmail] = useState<string | null>(null); // Track copied email
     const [open, setOpen] = useState(false);
@@ -145,7 +144,7 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs, t }) => {
                         <TableRow key={job.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                             <TableCell component="th" scope="row" onClick={() => handleOpen(job)}
                                 style={{ cursor: 'pointer' }}>
-                                {t(job.headline)}
+                                {job.headline}
                             </TableCell>
                             <TableCell>{job.employer?.name}</TableCell>
                             <TableCell>

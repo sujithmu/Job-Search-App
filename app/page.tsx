@@ -82,9 +82,6 @@ const Home: React.FC = () => {
     const [sortColumn, setSortColumn] = useState<'publication_date' | null>('publication_date'); // Default sort column
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Default sort direction
     const { t, i18n } = useTranslation(); // Move to parent
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
 
   const handleSearch = async (query: string) => {
     setLoading(true);
@@ -102,18 +99,18 @@ const Home: React.FC = () => {
       fetchedJobs = sortJobs(fetchedJobs, 'publication_date', 'desc');
 
       // Add translations dynamically in parent
-      if (fetchedJobs && fetchedJobs.length > 0) {
-        const newTranslations = fetchedJobs.reduce((acc: any, job) => {
-          if (job.headline && !i18n.exists(job.headline)) {
-            acc[job.headline] = job.headline; // Use the same value as key for default
-          }
-          return acc;
-        }, {});
-        if (Object.keys(newTranslations).length > 0) {
-          i18n.addResources('en', 'translation', newTranslations);
-          i18n.addResources('sv', 'translation', newTranslations);
-        }
-      }
+    //   if (fetchedJobs && fetchedJobs.length > 0) {
+    //     const newTranslations = fetchedJobs.reduce((acc: any, job) => {
+    //       if (job.headline && !i18n.exists(job.headline)) {
+    //         acc[job.headline] = job.headline; // Use the same value as key for default
+    //       }
+    //       return acc;
+    //     }, {});
+    //     if (Object.keys(newTranslations).length > 0) {
+    //       i18n.addResources('en', 'translation', newTranslations);
+    //       i18n.addResources('sv', 'translation', newTranslations);
+    //     }
+    //   }
       setJobs(fetchedJobs);
       setTotalItems(response.data.total.value);
       console.log("response.data.total", response.data.total.value) //check if this value is being populated or not
@@ -211,7 +208,7 @@ const Home: React.FC = () => {
                         </Button>
                     </Stack>
 
-                    <JobListTable jobs={currentJobs} t={t}/>
+                    <JobListTable jobs={currentJobs}/>
                     <Pagination
                         currentPage={currentPage}
                         totalPages={Math.ceil(totalItems / ITEMS_PER_PAGE)}
