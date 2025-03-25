@@ -1,103 +1,233 @@
-import Image from "next/image";
+'use client'; // Mark this component as a client component
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import React, { useState, useEffect } from 'react';
+import JobSearchForm from './components/JobSearchForm'; // Use "@/components" alias
+import JobListTable from './components/JobListTable';
+import Pagination from './components/Pagination';
+import axios from 'axios';
+import { Container, Typography, Box, Button, Stack, LinearProgress, AppBar,
+    Toolbar,
+    IconButton } from '@mui/material';
+import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import { Translate } from '@mui/icons-material'; // Import Translate icon
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import { useTranslation } from 'react-i18next'; // Import useTranslation
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+i18n.use(initReactI18next).init({
+    resources: {
+      en: {
+        translation: {
+            "Copied!": "Copied!",
+  
+        },
+      },
+      sv: {
+        translation: {
+  
+          "Copied!": "Kopierat!",
+        },
+      },
+    },
+    lng: 'en', // Default language
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false, // React already escapes
+    },
+  });
+const ITEMS_PER_PAGE = 10;
+
+// Define types for the API response data
+interface Language {
+    name: string;
 }
+
+interface ApplicationContact {
+    name?: string;
+    email?: string;
+    telephone?: string;
+}
+
+interface JobHit {
+    id: string;
+    headline: string;
+    employer?: {
+        name?: string;
+    };
+    application_details?: {
+        url?: string;
+    };
+    workplace_address?: {
+        municipality?: string;
+    };
+    must_have?: {
+        languages?: Language[];
+    };
+    application_contacts?: ApplicationContact[];
+    publication_date?: string; // Add publication_date
+}
+
+interface ApiResponse {
+    hits: JobHit[];
+    total: {
+        value: number;
+    };
+}
+
+type SortDirection = 'asc' | 'desc' | null;
+
+const Home: React.FC = () => {
+    const [jobs, setJobs] = useState<JobHit[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalItems, setTotalItems] = useState<number>(0);
+    const [sortColumn, setSortColumn] = useState<'publication_date' | null>('publication_date'); // Default sort column
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Default sort direction
+    const { t, i18n } = useTranslation(); // Move to parent
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
+
+  const handleSearch = async (query: string) => {
+    setLoading(true);
+    setError(null);
+    setCurrentPage(1);
+
+    try {
+      const response = await axios.get<ApiResponse>(
+        `https://jobsearch.api.jobtechdev.se/search?q=${query}&limit=100`
+      );
+
+      let fetchedJobs = response.data.hits || [];
+
+      // Sort the data by publication_date in descending order initially
+      fetchedJobs = sortJobs(fetchedJobs, 'publication_date', 'desc');
+
+      // Add translations dynamically in parent
+      if (fetchedJobs && fetchedJobs.length > 0) {
+        const newTranslations = fetchedJobs.reduce((acc: any, job) => {
+          if (job.headline && !i18n.exists(job.headline)) {
+            acc[job.headline] = job.headline; // Use the same value as key for default
+          }
+          return acc;
+        }, {});
+        if (Object.keys(newTranslations).length > 0) {
+          i18n.addResources('en', 'translation', newTranslations);
+          i18n.addResources('sv', 'translation', newTranslations);
+        }
+      }
+      setJobs(fetchedJobs);
+      setTotalItems(response.data.total.value);
+      console.log("response.data.total", response.data.total.value) //check if this value is being populated or not
+    } catch (err: any) {
+      console.error('Error fetching jobs:', err);
+      setError(err.message || 'An error occurred while fetching jobs.');
+      setJobs([]);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    const handleSort = (column: 'publication_date') => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const sortJobs = (jobsToSort: JobHit[], column: 'publication_date', direction: SortDirection): JobHit[] => {
+        if (!column || !direction) {
+            return jobsToSort;
+        }
+
+        return [...jobsToSort].sort((a, b) => {
+            const dateA = new Date(a[column] || 0).getTime();  // Handle potentially missing dates
+            const dateB = new Date(b[column] || 0).getTime();
+
+            if (direction === 'asc') {
+                return dateA - dateB;
+            } else {
+                return dateB - dateA;
+            }
+        });
+    };
+
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+
+    // Apply sorting to currentJobs
+    const currentJobs = sortJobs(jobs.slice(startIndex, endIndex), sortColumn || 'publication_date', sortDirection || 'desc');
+
+    return (
+        <Container maxWidth="lg">
+            {/*<AppBar position="static">
+                <Toolbar>
+                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                        Job Search Application
+                    </Typography>
+                    <IconButton
+                        size="large"
+                        edge="end"
+                        color="inherit"
+                        aria-label="translate to English"
+                        onClick={() => changeLanguage('en')}
+                    >
+                        <Translate />
+                    </IconButton>
+                </Toolbar>
+            </AppBar>*/}
+            <Box mt={4} mb={2}>
+                <Typography variant="h4" align="left">
+                    Search for jobs in Sweden
+                </Typography>
+            </Box>
+
+            <JobSearchForm onSearch={handleSearch} />
+
+            {/* {loading && <Typography align="center">Loading...</Typography>} */}
+            {loading && <LinearProgress />} {/* Add LinearProgress */}
+            {error && (
+                <Typography color="error" align="center">
+                    Error: {error}
+                </Typography>
+            )}
+
+            {jobs.length > 0 && (
+                <>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography>Sort by:</Typography>
+                        <Button
+                            onClick={() => handleSort('publication_date')}
+                            variant="outlined"
+                            startIcon={sortColumn === 'publication_date' && sortDirection === 'asc' ? <ArrowUpward /> : sortColumn === 'publication_date' && sortDirection === 'desc' ? <ArrowDownward /> : null}
+                        >
+                            Publication Date
+                        </Button>
+                    </Stack>
+
+                    <JobListTable jobs={currentJobs} t={t}/>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(totalItems / ITEMS_PER_PAGE)}
+                        onPageChange={handlePageChange}
+                        totalItems={totalItems} // Pass totalItems
+                    />
+                </>
+            )}
+            {jobs.length === 0 && !loading && !error && (
+                    <Typography align="center">No jobs found. Please try a different search term.</Typography>
+            )}
+        </Container>
+    );
+};
+
+export default Home;
