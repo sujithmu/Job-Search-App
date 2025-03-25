@@ -1,7 +1,7 @@
 // components/JobListTable.tsx  (Minor change, not strictly required)
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
     Table,
     TableBody,
@@ -18,8 +18,6 @@ import {
     Typography
 } from '@mui/material';
 import { ContentCopy, Close } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
-import i18n from 'i18next'; // Import i18n instance
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities'; // Import the utility function
 
 interface Language {

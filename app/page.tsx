@@ -1,15 +1,12 @@
 'use client'; // Mark this component as a client component
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import JobSearchForm from './components/JobSearchForm'; // Use "@/components" alias
 import JobListTable from './components/JobListTable';
 import Pagination from './components/Pagination';
 import axios from 'axios';
-import { Container, Typography, Box, Button, Stack, LinearProgress, AppBar,
-    Toolbar,
-    IconButton } from '@mui/material';
+import { Container, Typography, Box, Button, Stack, LinearProgress } from '@mui/material';
 import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
-import { Translate } from '@mui/icons-material'; // Import Translate icon
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { useTranslation } from 'react-i18next'; // Import useTranslation

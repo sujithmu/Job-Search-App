@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Box, IconButton, InputAdornment } from '@mui/material';
 import { Clear } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
 
 interface JobSearchFormProps {
     onSearch: (query: string) => void;
@@ -11,7 +10,7 @@ interface JobSearchFormProps {
 
 const JobSearchForm: React.FC<JobSearchFormProps> = ({ onSearch }) => {
     const [query, setQuery] = useState<string>('');
-    const { t } = useTranslation();
+    // const { t } = useTranslation();
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(event.target.value);
