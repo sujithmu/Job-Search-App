@@ -81,7 +81,6 @@ const Home: React.FC = () => {
     const [totalItems, setTotalItems] = useState<number>(0);
     const [sortColumn, setSortColumn] = useState<'publication_date' | null>('publication_date'); // Default sort column
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Default sort direction
-    const { t, i18n } = useTranslation(); // Move to parent
 
   const handleSearch = async (query: string) => {
     setLoading(true);
@@ -114,9 +113,14 @@ const Home: React.FC = () => {
       setJobs(fetchedJobs);
       setTotalItems(response.data.total.value);
       console.log("response.data.total", response.data.total.value) //check if this value is being populated or not
-    } catch (err: any) {
-      console.error('Error fetching jobs:', err);
-      setError(err.message || 'An error occurred while fetching jobs.');
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error('Error fetching jobs:', err);
+            setError(err.message || 'An error occurred while fetching jobs.');
+          } else {
+            console.error('Unknown error:', err);
+            setError('An unknown error occurred while fetching jobs.');
+          }
       setJobs([]);
       setTotalItems(0);
     } finally {
