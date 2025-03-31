@@ -50,6 +50,7 @@ interface JobHit {
     employer?: {
         name?: string;
     };
+    logo_url?: string;
     application_details?: {
         url?: string;
     };

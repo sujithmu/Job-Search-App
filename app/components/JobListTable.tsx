@@ -1,4 +1,3 @@
-// components/JobListTable.tsx  (Minor change, not strictly required)
 'use client';
 
 import React, {useState} from 'react';
@@ -15,10 +14,13 @@ import {
     Tooltip,
     Modal,
     Box,
-    Typography
+    Typography,
+    Avatar,
+    Button
 } from '@mui/material';
 import { ContentCopy, Close } from '@mui/icons-material';
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities'; // Import the utility function
+import NoPreview from '../../public/no-preview.jpeg'
 
 interface Language {
     name: string;
@@ -36,6 +38,7 @@ interface JobHit {
     employer?: {
         name?: string;
     };
+    logo_url?: string;
     application_details?: {
         url?: string;
         email?: string;
@@ -79,31 +82,6 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
     const [open, setOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<JobHit | null>(null);
 
-    // useEffect(() => {
-    //     // Dynamically add job headlines to translation resources
-    //     const addTranslations = () => {
-    //       if (!jobs || jobs.length === 0) return;
-    
-    //       const newTranslations = jobs.reduce((acc: any, job) => {
-    //         if (job.headline && !i18n.exists(job.headline)) {
-    //           acc[job.headline] = job.headline; // Use the same value as key for default
-    //         }
-    //         return acc;
-    //       }, {});
-    
-    //       if (Object.keys(newTranslations).length > 0) {
-    //         i18n.addResources('en', 'translation', newTranslations); // Add to English
-    //         i18n.addResources('sv', 'translation', newTranslations); // Add to Swedish,
-    //         // You can call API to add the translations to backend as well
-    //         //await axios.post('/api/updateTranslations',newTranslations, {
-    //         //   header:{'Authorization': `Bearer ${token}`}
-    //         //} )
-    //       }
-    //     };
-    
-    //     addTranslations();
-    //   }, [jobs, i18n]); // Reacts when jobs or i18n changes
-
     const handleOpen = (job: JobHit) => {
         setSelectedJob(job);
         setOpen(true);
@@ -130,6 +108,7 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
             <Table sx={{ minWidth: 650 }} aria-label="job list table">
                 <TableHead>
                     <TableRow>
+                    <TableCell style={{ fontWeight: 'bold' }}></TableCell>
                         <TableCell style={{ fontWeight: 'bold' }}>Job</TableCell>
                         <TableCell style={{ fontWeight: 'bold' }}>Employer</TableCell>
                         <TableCell style={{ fontWeight: 'bold' }}>Application URL</TableCell>
@@ -142,6 +121,22 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
                 <TableBody>
                     {jobs.map((job) => (
                         <TableRow key={job.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                            <TableCell>
+                                {job.logo_url ? (
+                                    <Avatar
+                                        src={job.logo_url}
+                                        alt={`${job.employer?.name || 'Company'} Logo`}
+                                        style={{ width: 70, height: 40, objectFit: 'contain', borderRadius: 5  }}
+                                    />
+                                ) : (
+                                    
+                                    <Avatar
+                                        src={NoPreview.src}
+                                        alt={`${job.employer?.name || 'Company'} Logo`}
+                                        style={{ width: 50, height: 40 }}
+                                    />
+                                )}
+                            </TableCell>
                             <TableCell component="th" scope="row" onClick={() => handleOpen(job)}
                                 style={{ cursor: 'pointer' }}>
                                 {job.headline}
@@ -216,6 +211,19 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
                             <Typography id="job-description-modal" variant="h6" component="h2">
                                 {selectedJob?.headline}
                             </Typography>
+                            {selectedJob?.logo_url ? (
+                                <Avatar
+                                    src={selectedJob.logo_url}
+                                    alt={`${selectedJob.employer?.name || 'Company'} Logo`}
+                                    style={{ width: 200, height: 100, marginTop: 0, borderRadius: 0, objectFit: 'contain' }}
+                                />
+                            ) : (
+                                <Avatar
+                                    src={NoPreview.src}
+                                    alt="No Preview Available"
+                                    style={{ width: 40, height: 40, marginTop: 10 }}
+                                />
+                            )}
                         </Box>
                         <IconButton aria-label="close" onClick={handleClose}>
                             <Close />
@@ -228,6 +236,28 @@ const JobListTable: React.FC<JobListTableProps> = ({ jobs }) => {
                         __html: decodeHtmlEntities(selectedJob?.description?.text_formatted || ''),
                       }}
                     />
+                    {selectedJob?.application_details?.url && (
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                href={selectedJob.application_details.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ mr: 2 }}
+                            >
+                                Apply Now
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleClose}
+                                rel="noopener noreferrer"
+                            >
+                                Close
+                            </Button>
+                        </Box>
+                    )}
                 </Box>
             </Modal>
         </TableContainer>
