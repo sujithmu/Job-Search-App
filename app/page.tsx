@@ -183,10 +183,21 @@ const Home: React.FC = () => {
                     </IconButton>
                 </Toolbar>
             </AppBar>*/}
-            <Box mt={4} mb={2}>
+            <Box mt={4} mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
                 <Typography variant="h4" align="left">
                     Search for jobs in Sweden
                 </Typography>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    href="/eu-jobs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    startIcon={<span style={{ fontSize: 18 }}>🌍</span>}
+                    sx={{ whiteSpace: 'nowrap' }}
+                >
+                    Search EU Jobs
+                </Button>
             </Box>
 
             <JobSearchForm onSearch={handleSearch} />
