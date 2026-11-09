@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ClientOnly from '../components/ClientOnly';
 import {
@@ -33,7 +33,7 @@ import {
     SelectChangeEvent,
     Pagination as MuiPagination,
 } from '@mui/material';
-import { ContentCopy, Close, Public, Work } from '@mui/icons-material';
+import { ContentCopy, Close, Public, Work, SwapVert } from '@mui/icons-material';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -199,6 +199,7 @@ export default function EuJobsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
+    const [sortMode, setSortMode] = useState<'MOST_RECENT' | 'RELEVANCE'>('MOST_RECENT');
 
     // Modal
     const [open, setOpen] = useState(false);
@@ -211,7 +212,7 @@ export default function EuJobsPage() {
     const buildPayload = (page: number) => ({
         resultsPerPage: RESULTS_PER_PAGE,
         page,
-        sortSearch: 'MOST_RECENT',
+        sortSearch: sortMode,
         requestLanguage: 'en',
         keywords: keyword.trim()
             ? [{ keyword: keyword.trim(), specificSearchCode: 'EVERYWHERE' }]
@@ -248,8 +249,11 @@ export default function EuJobsPage() {
             // Real EURES API shape: { numberRecords, jvs: [...] }
             const list: EuresApiHit[] = raw?.jvs ?? [];
             const total: number = raw?.numberRecords ?? 0;
-            // Sort by creationDate descending (latest first)
-            const sorted = [...list].sort((a, b) => (b.creationDate ?? 0) - (a.creationDate ?? 0));
+            // Sort by creationDate descending when in MOST_RECENT mode;
+            // keep API order (relevance) otherwise
+            const sorted = sortMode === 'MOST_RECENT'
+                ? [...list].sort((a, b) => (b.creationDate ?? 0) - (a.creationDate ?? 0))
+                : list;
             setJobs(sorted);
             setTotalCount(total);
             setCurrentPage(page);
@@ -282,6 +286,14 @@ export default function EuJobsPage() {
         const v = event.target.value;
         setSelectedCountries(typeof v === 'string' ? v.split(',') : v);
     };
+
+    // Re-fetch when sort mode changes (only after initial search)
+    useEffect(() => {
+        if (hasSearched) {
+            fetchJobs(1);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sortMode]);
 
     // ── Modal ───────────────────────────────────
     const handleOpen = async (job: EuresApiHit) => {
@@ -393,13 +405,18 @@ export default function EuJobsPage() {
 
     /**
      * Available languages for this job (ISO codes → human labels).
+     * English is always shown first if present; remaining sorted alphabetically.
      */
-    const getLanguages = (j: EuresApiHit): string[] => {
-        if (!j.availableLanguages || j.availableLanguages.length === 0) return [];
-        return j.availableLanguages.map((iso) => {
+    const getLanguages = (j: EuresApiHit): string => {
+        if (!j.availableLanguages || j.availableLanguages.length === 0) return '';
+        const labels = j.availableLanguages.map((iso) => {
             const found = LANGUAGE_OPTIONS.find((l) => l.isoCode === iso.toLowerCase());
             return found ? found.label : iso.toUpperCase();
         });
+        // Put English first, then sort the rest alphabetically
+        const english = labels.filter((l) => l === 'English');
+        const rest = labels.filter((l) => l !== 'English').sort();
+        return [...english, ...rest].join(', ');
     };
 
     /**
@@ -523,6 +540,24 @@ export default function EuJobsPage() {
                             {Math.min(currentPage * RESULTS_PER_PAGE, totalCount)} of{' '}
                             <strong>{totalCount.toLocaleString()}</strong> results
                         </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <SwapVert fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">Sort by:</Typography>
+                            <Button
+                                size="small"
+                                variant={sortMode === 'MOST_RECENT' ? 'contained' : 'outlined'}
+                                onClick={() => { if (sortMode !== 'MOST_RECENT') { setSortMode('MOST_RECENT'); } }}
+                            >
+                                Latest Date
+                            </Button>
+                            <Button
+                                size="small"
+                                variant={sortMode === 'RELEVANCE' ? 'contained' : 'outlined'}
+                                onClick={() => { if (sortMode !== 'RELEVANCE') { setSortMode('RELEVANCE'); } }}
+                            >
+                                Relevance
+                            </Button>
+                        </Stack>
                     </Stack>
 
                     <TableContainer component={Paper} sx={{ mb: 3 }}>
@@ -602,13 +637,7 @@ export default function EuJobsPage() {
 
                                             {/* Languages */}
                                             <TableCell>
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                    {getLanguages(job).length > 0
-                                                        ? getLanguages(job).map((lang) => (
-                                                            <Chip key={lang} label={lang} size="small" variant="outlined" />
-                                                        ))
-                                                        : '—'}
-                                                </Box>
+                                                {getLanguages(job) || '—'}
                                             </TableCell>
 
                                             <TableCell>{getPubDate(job)}</TableCell>
@@ -673,6 +702,9 @@ export default function EuJobsPage() {
                         )}
                         {selectedJob && getDetailLocation(jobDetail, getLocation(selectedJob)) !== '—' && (
                             <Chip label={`📍 ${getDetailLocation(jobDetail, getLocation(selectedJob))}`} size="small" color="primary" variant="outlined" />
+                        )}
+                        {selectedJob && getLanguages(selectedJob) && (
+                            <Chip label={`🌐 ${getLanguages(selectedJob)}`} size="small" variant="outlined" />
                         )}
                         {loadingDetail && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
