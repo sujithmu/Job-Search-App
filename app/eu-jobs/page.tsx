@@ -212,7 +212,7 @@ export default function EuJobsPage() {
     const buildPayload = (page: number) => ({
         resultsPerPage: RESULTS_PER_PAGE,
         page,
-        sortSearch: sortMode,
+        sortSearch: sortMode === 'RELEVANCE' ? 'BEST_MATCH' : 'MOST_RECENT',
         requestLanguage: 'en',
         keywords: keyword.trim()
             ? [{ keyword: keyword.trim(), specificSearchCode: 'EVERYWHERE' }]
