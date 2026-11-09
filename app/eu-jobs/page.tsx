@@ -249,11 +249,27 @@ export default function EuJobsPage() {
             // Real EURES API shape: { numberRecords, jvs: [...] }
             const list: EuresApiHit[] = raw?.jvs ?? [];
             const total: number = raw?.numberRecords ?? 0;
-            // Sort by creationDate descending when in MOST_RECENT mode;
-            // keep API order (relevance) otherwise
-            const sorted = sortMode === 'MOST_RECENT'
-                ? [...list].sort((a, b) => (b.creationDate ?? 0) - (a.creationDate ?? 0))
-                : list;
+
+            // Prioritize records matching the selected language / English first
+            const hasLang = (job: EuresApiHit, code: string) =>
+                job.availableLanguages?.some((l) => l.toLowerCase() === code.toLowerCase()) ?? false;
+
+            const sorted = [...list].sort((a, b) => {
+                // When searching, prioritize records with English (or selected language) first
+                const targetCode = selectedLanguage || 'en';
+                const aMatch = (hasLang(a, targetCode) ? 2 : 0) + (hasLang(a, 'en') ? 1 : 0);
+                const bMatch = (hasLang(b, targetCode) ? 2 : 0) + (hasLang(b, 'en') ? 1 : 0);
+                if (aMatch !== bMatch) {
+                    return bMatch - aMatch; // higher match score first!
+                }
+
+                // Within the same language priority group, apply the selected sort
+                if (sortMode === 'MOST_RECENT') {
+                    return (b.creationDate ?? 0) - (a.creationDate ?? 0);
+                }
+                return 0; // preserve API order for relevance
+            });
+
             setJobs(sorted);
             setTotalCount(total);
             setCurrentPage(page);
@@ -494,7 +510,7 @@ export default function EuJobsPage() {
                             </Select>
                         </FormControl>
 
-                        {/* Language filter (no level) */}
+                        {/* Language filter */}
                         <FormControl sx={{ minWidth: 180 }}>
                             <InputLabel id="lang-label">Required Language</InputLabel>
                             <Select
@@ -507,6 +523,20 @@ export default function EuJobsPage() {
                                 {LANGUAGE_OPTIONS.map((l) => (
                                     <MenuItem key={l.isoCode} value={l.isoCode}>{l.label}</MenuItem>
                                 ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* Sort By option directly in search form */}
+                        <FormControl sx={{ minWidth: 160 }}>
+                            <InputLabel id="sort-form-label">Sort By</InputLabel>
+                            <Select
+                                labelId="sort-form-label"
+                                value={sortMode}
+                                label="Sort By"
+                                onChange={(e) => setSortMode(e.target.value as 'MOST_RECENT' | 'RELEVANCE')}
+                            >
+                                <MenuItem value="MOST_RECENT">Latest Date</MenuItem>
+                                <MenuItem value="RELEVANCE">Relevance</MenuItem>
                             </Select>
                         </FormControl>
                     </Stack>
